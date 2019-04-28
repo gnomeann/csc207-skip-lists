@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -20,23 +21,22 @@ public class SkipListTests {
   /**
    * Names of some numbers.
    */
-  static final String numbers[] =
-      {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
-          "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
-          "sixteen", "seventeen", "eighteen", "nineteen"};
+  static final String numbers[] = {"zero", "one", "two", "three", "four", "five", "six", "seven",
+      "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+      "seventeen", "eighteen", "nineteen"};
 
   /**
    * Names of more numbers.
    */
-  static final String tens[] = {"", "", "twenty", "thirty", "forty", "fifty",
-      "sixty", "seventy", "eighty", "ninety"};
+  static final String tens[] =
+      {"", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"};
 
   // +--------+----------------------------------------------------------
   // | Fields |
   // +--------+
 
   /**
-   * A of strings for tests. (Gets set by the subclasses.)
+   * A list of strings for tests. (Gets set by the subclasses.)
    */
   SkipList<String, String> strings;
 
@@ -62,8 +62,8 @@ public class SkipListTests {
   // +---------+
 
   /**
-   * Set up everything.  Unfortunately, @BeforeEach doesn't seem
-   * to be working, so we do this manually.
+   * Set up everything. Unfortunately, @BeforeEach doesn't seem to be working, so we do this
+   * manually.
    */
   @BeforeEach
   public void setup() {
@@ -76,9 +76,11 @@ public class SkipListTests {
   /**
    * Dump a SkipList to stderr.
    */
-  static <K,V> void dump(SkipList<K,V> map) {
+  static <K, V> void dump(SkipList<K, V> map) {
+    PrintWriter pen = new PrintWriter(System.err, true);
     System.err.print("[");
-    map.forEach((key,value) -> System.err.println(key + ":" + value + " "));
+    map.dump(pen);
+   // map.forEach((key, value) -> System.err.println(key + ":" + value + " "));
     System.err.println("]");
   } // dump
 
@@ -146,20 +148,20 @@ public class SkipListTests {
   // +--------------------+
 
   /**
-   * Add an integer to the ints list.
+   * Set an entry in the ints list.
    */
   void set(Integer i) {
     operations.add("set(" + i + ");");
     ints.set(i, value(i));
-  } // add
+  } // set(Integer)
 
   /**
-   * Add a string to the strings list.
+   * Set an entry in the strings list.
    */
   void set(String str) {
     operations.add("set(\"" + str + "\");");
     strings.set(str, value(str));
-  } // add(String)
+  } // set(String)
 
   /**
    * Remove an integer from the ints list.
@@ -172,7 +174,7 @@ public class SkipListTests {
   /**
    * Remove a string from the strings list.
    */
-  void add(String str) {
+  void remove(String str) {
     operations.add("remove(\"" + str + "\");");
     strings.remove(str);
   } // remove(String)
@@ -203,7 +205,7 @@ public class SkipListTests {
   // +-------------+
 
   /**
-   * A really simple test.  Add an element and make sure that it's there.
+   * A really simple test. Add an element and make sure that it's there.
    */
   @Test
   public void simpleTest() {
@@ -221,6 +223,145 @@ public class SkipListTests {
     setup();
     assertFalse(strings.containsKey("hello"));
   } // emptyTest()
+
+  /**
+   * The list should return null if the list does not contain what the user wants to remove.
+   */
+  @Test
+  public void removeEmptyTest() {
+    setup();
+    assertEquals(null, ints.remove(0));
+  } // removeEmptyTest()
+
+  /**
+   * Verify that a list with a sorted input stays sorted
+   */
+  @Test
+  public void sortedTest() {
+    setup();
+    // Add a bunch of values
+    for (int i = 0; i < 100; i++) {
+      set(i);
+    } // for
+    if (!inOrder(ints.keys())) {
+      System.err.println("inOrder() failed in sortedTest() for ints");
+      printTest();
+      dump(ints);
+      System.err.println();
+      fail("The instructions did not produce a sorted list.");
+    }
+  } // sortedTest()
+
+  /**
+   * Verify that a list with a reverse sorted input becomes sorted
+   */
+  @Test
+  public void reverseSortedTest() {
+    setup();
+    // Add a bunch of values
+    for (int i = 0; i > 100; i++) {
+      set(Math.abs(i - 100));
+    } // for
+    if (!inOrder(ints.keys())) {
+      System.err.println("inOrder() failed in reverseSortedTest() for ints");
+      printTest();
+      dump(ints);
+      System.err.println();
+      fail("The instructions did not produce a sorted list.");
+    }
+  } // reverseSortedTest()
+
+  /**
+   * Verify that remove() removes expected elements in list
+   */
+  @Test
+  public void removeEvensTest() {
+    setup();
+    // Add values
+    for (int i = 0; i < 20; i++) {
+      set(i);
+    } // for
+    
+
+    // Remove even keys (also tests removal from the front)
+    for (int i = 0; i < 20; i += 2) {
+      ints.remove(i);
+    } // for
+
+    for (int i = 0; i < 20; i++) {
+      // if an odd key does not exist, fail
+      if ((i % 2 != 0) && (!ints.containsKey(i))) {
+        log("get(" + i + ") failed");
+        printTest();
+        dump(ints);
+        fail(i + " is not in the skip list");
+        // if an even key exists, fail
+      } else if ((i % 2 == 0) && (ints.containsKey(i))) {
+        log("get(" + i + ") failed");
+        printTest();
+        dump(ints);
+        fail(i + " is in the skip list");
+      } // if/else
+    } // for
+  } // removeEvensTest()
+
+  /**
+   * Verify that the last element was removed smoothly
+   */
+  @Test
+  public void removeEndTest() {
+    int i = 0;
+    setup();
+    // Add a bunch of values
+    for (i = 0; i < 10; i++) {
+      set(i);
+    } // for
+    ints.remove(i - 1);
+    if (ints.containsKey(i - 1)) {
+      log("contains(" + (i - 1) + ") failed");
+      printTest();
+      dump(ints);
+      fail((i - 1) + " is in the skip list");
+    }
+  } // removeEndTest()
+
+  /**
+   * Check that when the given key does not exist, get returns null
+   */
+  @Test
+  public void keyNotFoundTest() {
+    int i = 0;
+    setup();
+    // Add a bunch of values
+    for (i = 0; i < 10; i++) {
+      set(i);
+    } // for
+    if (ints.get(i += 15) != null) {
+      log("get(" + i + ") failed");
+      printTest();
+      dump(ints);
+      fail(i + " does not return null");
+    }
+  } // keyNotFoundTest()
+
+  /**
+   * Verify that a list with a sorted string input stays sorted
+   */
+  @Test
+  public void sortedStringTest() {
+    setup();
+    // Add a bunch of values
+    for (int i = 0; i < numbers.length; i++) {
+      set(numbers[i]);
+    } // for
+    if (!inOrder(strings.keys())) {
+      System.err.println("inOrder() failed in sortedStringTest() for strings");
+      printTest();
+      dump(ints);
+      System.err.println();
+      fail("The instructions did not produce a sorted list.");
+    }
+  } // sortedStringTest()
 
   // +-----------------+-------------------------------------------------
   // | RandomizedTests |
@@ -290,7 +431,7 @@ public class SkipListTests {
           set(rand);
         } // if it's not already there.
         if (!ints.containsKey(rand)) {
-          log("After adding " + rand + ", contains(" + rand +") fails");
+          log("After adding " + rand + ", contains(" + rand + ") fails");
           ok = false;
         } // if (!ints.contains(rand))
       } // if we add
@@ -299,7 +440,7 @@ public class SkipListTests {
         remove(rand);
         keys.remove((Integer) rand);
         if (ints.containsKey(rand)) {
-          log("After removing " + rand + ", contains(" + rand +") succeeds");
+          log("After removing " + rand + ", contains(" + rand + ") succeeds");
           ok = false;
         } // if ints.contains(rand)
       } // if we remove
@@ -319,7 +460,7 @@ public class SkipListTests {
       fail("Operations failed");
     } // if (!ok)
   } // randomTest()
-  
+
   public static void main(String[] args) {
     SkipListTests slt = new SkipListTests();
     slt.setup();
