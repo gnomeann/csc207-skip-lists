@@ -154,9 +154,6 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
         this.counter += 2;
         current = current.next.get(i);
       } // while
-      this.counter += 2;
-        current = current.next.get(i);
-      } // while
       update.set(i, current);
     } // for
     // Check for node update
