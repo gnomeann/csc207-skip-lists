@@ -154,6 +154,7 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
         this.counter += 2;
         current = current.next.get(i);
       } // while
+      this.counter += 2;
       update.set(i, current);
     } // for
     // Check for node update
@@ -260,7 +261,6 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
     SLNode<K, V> current = new SLNode<K, V>(null, null, this.height);
     for (int i = 0; i < this.height; i++) {
       update.add(null);
-      update.add(current);
       current.next.set(i, this.front.get(i));
     } // for
 
@@ -275,10 +275,6 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
       // if we've found remove, set update to contain the nodes that point to what we want to remove
       if (current.next.get(i) != null && current.next.get(i).key != null
           && this.comparator.compare(key, current.next.get(i).key) == 0) {
-    while (current.next.get(0) != null && current.next.get(0).key != null
-        && this.comparator.compare(key, current.next.get(0).key) > 0) {
-      current = current.next.get(0);
-      for (int i = 0; i < current.next.size(); i++) {
         update.set(i, current);
       } //
     } // for
@@ -298,8 +294,6 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
         target.next.set(i, current.next.get(0).next.get(i));
       } // for
 
-    if (current != null && current.key != null && this.comparator.compare(key, current.key) == 0) {
-      V result = current.value;
       // Remove the element and rearrange pointers
       for (int i = 0; i < target.next.size(); i++) {
         if (update.get(i) == null) {
@@ -310,10 +304,6 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
           this.front.set(i, target.next.get(i));
         } else {
           updateNode.next.set(i, target.next.get(i));
-          this.front.set(i, current.next.get(i));
-        } // if
-        else {
-          updateNode.next.set(i, current.next.get(i));
         } // if (updateNode.key == null)
         this.counter++;
       } // for
@@ -557,3 +547,4 @@ class SLNode<K, V> {
   // +---------+
 
 } // SLNode<K,V>
+
